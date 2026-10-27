@@ -14,6 +14,21 @@ pnpm dev
 bun dev
 ```
 
+## MongoDB Configuration
+
+Create a `hostelfix/.env.local` file and add your MongoDB connection string:
+
+```env
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>/<database>
+```
+
+Replace the placeholders with your MongoDB Atlas credentials and database. If
+using Atlas, also allow your development machine's IP address in the cluster's
+Network Access settings. Keep `.env.local` private and restart the development
+server after changing it.
+
+Check the connection at [http://localhost:3000/api/test](http://localhost:3000/api/test).
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
