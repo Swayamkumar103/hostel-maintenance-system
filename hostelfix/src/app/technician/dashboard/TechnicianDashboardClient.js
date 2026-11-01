@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import UpdateComplaintButton from "@/Components/UpdateComplaintButton";
+import UpdateComplaintButton from "@/app/Components/UpdateComplaintButton";
 
 export default function TechnicianDashboardClient({
   initialStats,

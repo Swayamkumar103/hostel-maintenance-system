@@ -24,13 +24,21 @@ const UserShchema = new mongoose.Schema(
         },
         role:{
             type : String,
-            enum : ["student", "technician","warden"],
+            enum : ["student", "technician", "warden", "admin"],
             required : true,
         },
         accountStatus : {
             type : String,
             enum : ["pending","approved","rejected"],
             default:"pending",
+        },
+        assignedHostels: {
+            type : [String],
+            default : [],
+        },
+        hostel: {
+            type : String,
+            default : null,
         },
 
         emplyeedId:{

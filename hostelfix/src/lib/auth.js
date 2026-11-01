@@ -9,13 +9,14 @@ export async function getCurrentUser(){
         redirect("/login");
     }
     try{
+        const secret = process.env.JWT_SECRET || "hostelfix_dev_secret_key_123";
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET,
+            secret,
         );
         return decoded;
     } catch(error){
-        console.log("Invalid token");
+        console.log("Invalid token:", error.message);
         redirect("/login");
     }
 }

@@ -4,6 +4,8 @@ import connectDB from "@/lib/mongodb";
 import { getCurrentUser } from "@/lib/auth";
 import complain from "@/module/complain";
 import { Types } from "mongoose";
+import { recordHistory } from "@/modules/warden-admin/services/auditService";
+import { notifyStudent } from "@/lib/notifications";
 
 // ========================================
 // GET TECHNICIAN DASHBOARD
@@ -44,11 +46,14 @@ export async function getTechinianDashboard() {
 
     await connectDB();
 
-    // 4. Filter complaints assigned to this technician
+    const techObjId = new Types.ObjectId(technicianId.toString());
+
+    // 4. Filter complaints assigned to this technician (supporting both spellings)
     const filter = {
-      assignedTechnician: new Types.ObjectId(
-        technicianId.toString()
-      ),
+      $or: [
+        { assignedTechnician: techObjId },
+        { assignedTechician: techObjId },
+      ],
     };
 
     // 5. Fetch complaints and statistics
@@ -71,18 +76,18 @@ export async function getTechinianDashboard() {
 
       complain.countDocuments({
         ...filter,
-        status: "In Progress",
+        status: { $in: ["In Progress", "In progress"] },
       }),
 
       complain.countDocuments({
         ...filter,
-        status: "Completed",
+        status: { $in: ["Completed", "Resolved"] },
       }),
 
       complain.countDocuments({
         ...filter,
         status: {
-          $in: ["Pending", "Assigned"],
+          $in: ["Pending", "Assigned", "Submitted"],
         },
       }),
     ]);
@@ -94,7 +99,7 @@ export async function getTechinianDashboard() {
       _id: c._id.toString(),
 
       assignedTechnician:
-        c.assignedTechnician?.toString() ?? null,
+        (c.assignedTechnician || c.assignedTechician)?.toString() ?? null,
 
       studentId:
         c.studentId?.toString() ?? null,
@@ -106,7 +111,7 @@ export async function getTechinianDashboard() {
         c.updatedAt?.toISOString() ?? null,
 
       scheduledDate:
-        c.scheduledDate?.toISOString() ?? null,
+        (c.scheduledDate || c.schduledDate)?.toISOString() ?? null,
 
       completedAt:
         c.completedAt?.toISOString() ?? null,
@@ -180,12 +185,15 @@ export async function getAssignedComplaints() {
 
     await connectDB();
 
+    const techObjId = new Types.ObjectId(technicianId.toString());
+
     // 4. Fetch assigned complaints
     const complaints = await complain
       .find({
-        assignedTechnician: new Types.ObjectId(
-          technicianId.toString()
-        ),
+        $or: [
+          { assignedTechnician: techObjId },
+          { assignedTechician: techObjId },
+        ],
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -197,7 +205,7 @@ export async function getAssignedComplaints() {
       _id: c._id.toString(),
 
       assignedTechnician:
-        c.assignedTechnician?.toString() ?? null,
+        (c.assignedTechnician || c.assignedTechician)?.toString() ?? null,
 
       studentId:
         c.studentId?.toString() ?? null,
@@ -209,7 +217,7 @@ export async function getAssignedComplaints() {
         c.updatedAt?.toISOString() ?? null,
 
       scheduledDate:
-        c.scheduledDate?.toISOString() ?? null,
+        (c.scheduledDate || c.schduledDate)?.toISOString() ?? null,
 
       completedAt:
         c.completedAt?.toISOString() ?? null,
@@ -276,6 +284,7 @@ export async function updateComplaintStatus(
     const allowedStatuses = [
       "In Progress",
       "Completed",
+      "Resolved",
     ];
 
     if (!allowedStatuses.includes(newStatus)) {
@@ -301,12 +310,15 @@ export async function updateComplaintStatus(
 
     await connectDB();
 
+    const techObjId = new Types.ObjectId(technicianId.toString());
+
     // 6. Find the complaint assigned to this technician
     const filter = {
       _id: new Types.ObjectId(complaintId),
-      assignedTechnician: new Types.ObjectId(
-        technicianId.toString()
-      ),
+      $or: [
+        { assignedTechnician: techObjId },
+        { assignedTechician: techObjId },
+      ],
     };
 
     const existingComplaint =
@@ -321,20 +333,25 @@ export async function updateComplaintStatus(
     }
 
     // 7. Validate status transition
+    const isStarting = newStatus === "In Progress";
+    const isFinishing = newStatus === "Completed" || newStatus === "Resolved";
+
     if (
-      newStatus === "In Progress" &&
-      existingComplaint.status !== "Assigned"
+      isStarting &&
+      existingComplaint.status !== "Assigned" &&
+      existingComplaint.status !== "Escalated"
     ) {
       return {
         success: false,
         message:
-          "Only assigned complaints can be started.",
+          "Only assigned or escalated complaints can be started.",
       };
     }
 
     if (
-      newStatus === "Completed" &&
-      existingComplaint.status !== "In Progress"
+      isFinishing &&
+      existingComplaint.status !== "In Progress" &&
+      existingComplaint.status !== "In progress"
     ) {
       return {
         success: false,
@@ -343,16 +360,43 @@ export async function updateComplaintStatus(
       };
     }
 
+    const previousStatus = existingComplaint.status;
+
     // 8. Update complaint status
     existingComplaint.status = newStatus;
 
-    if (newStatus === "Completed") {
+    if (isFinishing) {
       existingComplaint.completedAt = new Date();
     }
 
     await existingComplaint.save();
 
-    // 9. Return success
+    // 9. Record to history audit log
+    await recordHistory({
+      complaintId: existingComplaint._id,
+      action: isFinishing ? "resolved" : "status_changed",
+      oldValue: previousStatus,
+      newValue: newStatus,
+      remarks: `Technician updated status to ${newStatus}`,
+      performedBy: techObjId,
+      performedByName: technician.name || "Technician",
+      performedByRole: "technician",
+      isStudentVisible: true,
+    });
+
+    // 10. Notify student
+    await notifyStudent({
+      studentId: existingComplaint.studentId,
+      complaintId: existingComplaint._id,
+      title: isFinishing ? "Complaint Work Completed" : "Technician Started Work",
+      message: isFinishing
+        ? `Technician has marked complaint "${existingComplaint.title}" as completed.`
+        : `Technician has started working on complaint "${existingComplaint.title}".`,
+      type: isFinishing ? "complaint_resolved" : "status_updated",
+      eventKey: `tech_update_${existingComplaint._id}_${newStatus}_${Date.now()}`,
+    });
+
+    // 11. Return success
     return {
       success: true,
       message: `Complaint status updated to ${newStatus}.`,
