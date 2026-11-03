@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import connectDB from "@/lib/mongodb";
-import User from "@/module/User";
+import Technician from "@/module/Technician";
 
 export async function POST(request){
     try{
@@ -18,9 +18,11 @@ export async function POST(request){
                 {status:400},
             )
         }
-        const user = await User.findOne({
+        const user = await Technician.findOne({
             email : email.trim().toLowerCase()
         })
+        // console.log(user);
+        // console.log(user.roal);
         if(!user){
             return NextResponse.json(
                 {
@@ -30,7 +32,7 @@ export async function POST(request){
                 {status:401}
             );
         }
-        if(user.role!=="technician"){
+        if(user.roal!=="technician"){
             return NextResponse.json(
                 {sucess : false,
                 message : "Acces denied. Technician account required.",},
