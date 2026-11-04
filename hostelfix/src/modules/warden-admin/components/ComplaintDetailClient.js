@@ -9,26 +9,57 @@ import ConfirmationModal from "./ConfirmationModal";
 import { PRIORITIES, VALID_STATUS_TRANSITIONS, STATUS_CANONICAL_MAP } from "@/lib/constants";
 
 export default function ComplaintDetailClient({ complaint: initialComplaint, technicians = [] }) {
+    // complaint state holds the full complaint data (refreshed after every action)
     const [complaint, setComplaint] = useState(initialComplaint);
+
+    // modalState tracks which modal dialog is currently open (assign/priority/escalate/status)
     const [modalState, setModalState] = useState({ type: null, isOpen: false });
+
+    // Form field states for modal inputs
     const [selectedTech, setSelectedTech] = useState(initialComplaint.assignedTechnician?.id || "");
     const [scheduledDate, setScheduledDate] = useState("");
     const [selectedPriority, setSelectedPriority] = useState(initialComplaint.priority || "Medium");
     const [selectedStatus, setSelectedStatus] = useState("");
     const [resolutionNotes, setResolutionNotes] = useState("");
+
+    // Toast notification (shown after each action)
     const [feedbackMsg, setFeedbackMsg] = useState({ text: "", type: "info" });
+
+    // Tracks whether a form is being submitted (disables button to prevent double-clicks)
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Normalize the current status to its canonical form for transition checks
+    // e.g., "In progress" → "In Progress" via the STATUS_CANONICAL_MAP lookup
     const canonicalStatus = STATUS_CANONICAL_MAP[complaint.status] || complaint.status;
+
+    // List of statuses this complaint is allowed to move to next
     const allowedTransitions = VALID_STATUS_TRANSITIONS[canonicalStatus] || [];
 
-    // Helper: show toast message
+    // Helper: show a toast notification message for 5 seconds, then auto-hide
     function showToast(text, type = "success") {
         setFeedbackMsg({ text, type });
         setTimeout(() => setFeedbackMsg({ text: "", type: "info" }), 5000);
     }
 
-    // Action 1: Assign / Reassign Technician
+    // Helper: close the currently open modal
+    function closeModal() {
+        setModalState({ type: null, isOpen: false });
+    }
+
+    // Helper: re-fetch the complaint from the server to get latest data after an action
+    async function refreshComplaint() {
+        try {
+            const res = await fetch(`/api/warden-admin/complaints/${complaint._id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setComplaint(data.complaint);
+            }
+        } catch {
+            // silent — UI still works with stale data if refresh fails
+        }
+    }
+
+    // --- Action 1: Assign or Reassign Technician ---
     async function handleAssignSubmit(reason) {
         if (!selectedTech) {
             showToast("Please select a technician.", "error");
@@ -51,9 +82,8 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
             if (!res.ok) throw new Error(data.message || "Failed to assign technician");
 
             showToast(data.message || "Technician assigned successfully.");
-            setModalState({ type: null, isOpen: false });
-            // Refresh detail
-            refreshComplaint();
+            closeModal();
+            refreshComplaint(); // reload complaint to show updated technician
         } catch (err) {
             showToast(err.message, "error");
         } finally {
@@ -61,24 +91,21 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
         }
     }
 
-    // Action 2: Update Priority
+    // --- Action 2: Update Priority ---
     async function handlePrioritySubmit(reason) {
         setIsSubmitting(true);
         try {
             const res = await fetch(`/api/warden-admin/complaints/${complaint._id}/priority`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    priority: selectedPriority,
-                    reason,
-                }),
+                body: JSON.stringify({ priority: selectedPriority, reason }),
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || "Failed to update priority");
 
             showToast(data.message || "Priority updated successfully.");
-            setModalState({ type: null, isOpen: false });
+            closeModal();
             refreshComplaint();
         } catch (err) {
             showToast(err.message, "error");
@@ -87,7 +114,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
         }
     }
 
-    // Action 3: Escalate
+    // --- Action 3: Escalate Complaint ---
     async function handleEscalateSubmit(reason) {
         setIsSubmitting(true);
         try {
@@ -101,7 +128,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
             if (!res.ok) throw new Error(data.message || "Failed to escalate complaint");
 
             showToast(data.message || "Complaint escalated successfully.");
-            setModalState({ type: null, isOpen: false });
+            closeModal();
             refreshComplaint();
         } catch (err) {
             showToast(err.message, "error");
@@ -110,7 +137,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
         }
     }
 
-    // Action 4: Update Status
+    // --- Action 4: Update Status ---
     async function handleStatusSubmit(remarks) {
         if (!selectedStatus) return;
 
@@ -130,7 +157,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
             if (!res.ok) throw new Error(data.message || "Failed to update status");
 
             showToast(data.message || "Status updated successfully.");
-            setModalState({ type: null, isOpen: false });
+            closeModal();
             refreshComplaint();
         } catch (err) {
             showToast(err.message, "error");
@@ -139,20 +166,8 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
         }
     }
 
-    async function refreshComplaint() {
-        try {
-            const res = await fetch(`/api/warden-admin/complaints/${complaint._id}`);
-            if (res.ok) {
-                const data = await res.json();
-                setComplaint(data.complaint);
-            }
-        } catch {
-            // silent
-        }
-    }
-
-    const isAssigned = !!complaint.assignedTechnician;
-    const sla = complaint.sla;
+    const isAssigned = !!complaint.assignedTechnician; // true if a technician is already assigned
+    const sla = complaint.sla; // SLA metrics (elapsedHours, remainingHours, isOverdue, etc.)
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -263,6 +278,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                             Update Priority
                         </button>
 
+                        {/* Show Escalate button only if not already escalated or resolved */}
                         {!complaint.isEscalated && !["Resolved", "Completed", "Closed"].includes(complaint.status) && (
                             <button
                                 type="button"
@@ -273,6 +289,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                             </button>
                         )}
 
+                        {/* Show Change Status button only if there are valid next statuses */}
                         {allowedTransitions.length > 0 && (
                             <button
                                 type="button"
@@ -298,7 +315,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                     </p>
                 </div>
 
-                {/* Resolution Notes (if present) */}
+                {/* Resolution Notes (shown only if technician added notes) */}
                 {complaint.resolutionNotes && (
                     <div className="mt-4 pt-4 border-t border-slate-100">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">
@@ -338,7 +355,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                                 </span>
                             </div>
 
-                            {/* Progress bar */}
+                            {/* SLA Progress bar: fills red if overdue, blue otherwise */}
                             <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                                 <div
                                     style={{ width: `${Math.min(100, sla?.percentElapsed || 0)}%` }}
@@ -448,7 +465,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                 inputLabel="Reassignment Reason"
                 inputRequired={isAssigned}
                 inputPlaceholder="e.g. Technician unavailable / Specialized skill required..."
-                onCancel={() => setModalState({ type: null, isOpen: false })}
+                onCancel={closeModal}
                 onConfirm={handleAssignSubmit}
             >
                 <div className="space-y-3">
@@ -496,7 +513,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                 inputLabel="Reason for Change (Optional)"
                 inputRequired={false}
                 inputPlaceholder="e.g. Student reported water leakage spreading to electrical board..."
-                onCancel={() => setModalState({ type: null, isOpen: false })}
+                onCancel={closeModal}
                 onConfirm={handlePrioritySubmit}
             >
                 <div>
@@ -529,7 +546,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                 inputLabel="Mandatory Escalation Reason"
                 inputRequired={true}
                 inputPlaceholder="Specify why this requires immediate escalation (e.g. safety hazard, repeated delay)..."
-                onCancel={() => setModalState({ type: null, isOpen: false })}
+                onCancel={closeModal}
                 onConfirm={handleEscalateSubmit}
             />
 
@@ -545,7 +562,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                 inputLabel="Remarks"
                 inputRequired={false}
                 inputPlaceholder="Notes explaining the status change..."
-                onCancel={() => setModalState({ type: null, isOpen: false })}
+                onCancel={closeModal}
                 onConfirm={handleStatusSubmit}
             >
                 <div className="space-y-3">
@@ -566,6 +583,7 @@ export default function ComplaintDetailClient({ complaint: initialComplaint, tec
                         </select>
                     </div>
 
+                    {/* Show resolution notes textarea only when marking as Resolved */}
                     {selectedStatus === "Resolved" && (
                         <div>
                             <label className="block text-xs font-semibold text-slate-700 mb-1">

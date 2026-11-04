@@ -43,7 +43,7 @@ export default function TechniciansClient({ initialTechnicians = [] }) {
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row gap-3 rounded-3xl border-2 border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/5">
                 <div className="flex-1">
                     <input
                         type="text"
@@ -72,7 +72,7 @@ export default function TechniciansClient({ initialTechnicians = [] }) {
 
             {/* Technicians Grid */}
             {filtered.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-xs">
+                <div className="rounded-3xl border-2 border-slate-200/90 bg-white py-16 text-center shadow-md shadow-slate-900/5">
                     <span className="text-3xl">👷</span>
                     <h3 className="mt-2 text-base font-bold text-slate-800">No technicians found</h3>
                     <p className="mt-1 text-xs text-slate-500">No technician matches the current search or filter criteria.</p>
@@ -82,7 +82,7 @@ export default function TechniciansClient({ initialTechnicians = [] }) {
                     {filtered.map((tech) => (
                         <div
                             key={tech._id}
-                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:shadow-md"
+                            className="rounded-3xl border-2 border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/5 transition hover:shadow-xl hover:-translate-y-0.5"
                         >
                             <div className="flex items-start justify-between">
                                 <div>

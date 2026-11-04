@@ -5,7 +5,7 @@ import Complaint from "../src/module/complain.js";
 import ComplaintHistory from "../src/module/ComplaintHistory.js";
 import Notification from "../src/module/Notification.js";
 
-export async function seedDatabase(mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27018/hostelfix_test?directConnection=true") {
+export async function seedDatabase(mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/hostelfix") {
     console.log("Connecting to Mongo:", mongoUri);
     if (mongoose.connection.readyState === 0) {
         await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });

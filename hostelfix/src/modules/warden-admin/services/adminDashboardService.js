@@ -5,70 +5,92 @@ import { getComplaintSLAMetrics, getOverdueMongoFilter } from "@/lib/sla";
 import { notifyWardenAndAdmins } from "@/lib/notifications";
 
 /**
- * Fetch aggregated dashboard analytics scoped to authorized user.
+ * Fetch all statistics needed for the Admin/Warden dashboard.
+ *
+ * Returns:
+ *  - cards           : count of complaints by status (total, submitted, assigned, etc.)
+ *  - hostelStats     : per-hostel breakdown of total vs resolved complaints
+ *  - priorityOverview: count per priority level (Urgent, High, Medium, Low)
+ *  - statusDistribution: same as cards but keyed differently (used by charts)
+ *  - recentComplaints: 5 latest complaints with SLA info
  */
 export async function getDashboardStats(user) {
     await connectDB();
 
+    // Scope the queries to only the hostels this user is allowed to see.
+    // Admin gets all complaints; warden gets only their assigned hostel(s).
     const scopeFilter = getHostelFilterForUser(user);
 
-    // 1. Core status counts
+    // --- Part 1: Count complaints by status ---
+    // We run all 7 count queries in parallel (at the same time) for speed.
+    // Each query adds the scope filter to ensure the user only sees their data.
+
     const [
-        total,
-        submittedCount,
-        assignedCount,
-        inProgressCount,
-        resolvedCount,
-        closedCount,
-        escalatedCount,
+        total,          // all complaints in scope
+        submittedCount, // complaints that are "Submitted" or "Pending" (old name)
+        assignedCount,  // complaints assigned to a technician
+        inProgressCount, // complaints being worked on (or on hold)
+        resolvedCount,  // complaints that are fixed
+        closedCount,    // complaints confirmed closed
+        escalatedCount, // complaints marked as escalated/urgent
     ] = await Promise.all([
         Complaint.countDocuments(scopeFilter),
+
         Complaint.countDocuments({
             ...scopeFilter,
-            status: { $in: ["Submitted", "Pending"] },
+            status: { $in: ["Submitted", "Pending"] }, // "Pending" is an old status name
         }),
+
         Complaint.countDocuments({
             ...scopeFilter,
             status: "Assigned",
         }),
+
         Complaint.countDocuments({
             ...scopeFilter,
-            status: { $in: ["In Progress", "In progress", "On Hold"] },
+            status: { $in: ["In Progress", "In progress", "On Hold"] }, // multiple spellings from old data
         }),
+
         Complaint.countDocuments({
             ...scopeFilter,
-            status: { $in: ["Resolved", "Completed"] },
+            status: { $in: ["Resolved", "Completed"] }, // "Completed" is an old status name
         }),
+
         Complaint.countDocuments({
             ...scopeFilter,
             status: "Closed",
         }),
+
         Complaint.countDocuments({
             ...scopeFilter,
             $or: [{ status: "Escalated" }, { isEscalated: true }],
         }),
     ]);
 
-    // 2. Overdue count via SLA calculation
+    // --- Part 2: Count overdue complaints ---
+    // Overdue = complaint is still open but has exceeded its SLA time limit.
     const overdueFilter = {
         ...scopeFilter,
-        ...getOverdueMongoFilter(),
+        ...getOverdueMongoFilter(), // e.g., Urgent complaints older than 24h that aren't resolved
     };
     const overdueCount = await Complaint.countDocuments(overdueFilter);
 
-    // 3. Hostel-wise complaint breakdown
+    // --- Part 3: Hostel-wise breakdown ---
+    // For each hostel, count total complaints and how many are resolved vs pending.
+    // $group groups documents by hostel; $cond is a conditional (like an if/else in MongoDB).
     const hostelAgg = await Complaint.aggregate([
-        { $match: scopeFilter },
+        { $match: scopeFilter }, // only look at this user's scope
         {
             $group: {
-                _id: "$hostel",
+                _id: "$hostel", // group by hostel name
                 total: { $sum: 1 },
                 resolved: {
                     $sum: {
+                        // $cond is MongoDB's if/else: if status is in terminal list, count 1, else 0
                         $cond: [
                             { $in: ["$status", ["Resolved", "Completed", "Closed"]] },
-                            1,
-                            0,
+                            1, // resolved
+                            0, // not resolved
                         ],
                     },
                 },
@@ -76,16 +98,17 @@ export async function getDashboardStats(user) {
                     $sum: {
                         $cond: [
                             { $in: ["$status", ["Resolved", "Completed", "Closed"]] },
-                            0,
-                            1,
+                            0, // resolved (not pending)
+                            1, // still pending
                         ],
                     },
                 },
             },
         },
-        { $sort: { total: -1 } },
+        { $sort: { total: -1 } }, // show busiest hostel first
     ]);
 
+    // Format the aggregation result into a plain array
     const hostelStats = hostelAgg.map((h) => ({
         hostel: h._id || "Unknown",
         total: h.total,
@@ -93,30 +116,28 @@ export async function getDashboardStats(user) {
         pending: h.pending,
     }));
 
-    // 4. Priority breakdown
+    // --- Part 4: Priority distribution ---
+    // Count how many complaints are Urgent, High, Medium, Low.
+    // $ifNull replaces null/undefined priority with "Medium" (default).
     const priorityAgg = await Complaint.aggregate([
         { $match: scopeFilter },
         {
             $group: {
-                _id: { $ifNull: ["$priority", "Medium"] },
+                _id: { $ifNull: ["$priority", "Medium"] }, // default to "Medium" if priority is missing
                 count: { $sum: 1 },
             },
         },
     ]);
 
-    const priorityOverview = {
-        Urgent: 0,
-        High: 0,
-        Medium: 0,
-        Low: 0,
-    };
+    // Start with all priorities at 0, then fill in from the aggregation result
+    const priorityOverview = { Urgent: 0, High: 0, Medium: 0, Low: 0 };
     for (const p of priorityAgg) {
         if (priorityOverview[p._id] !== undefined) {
             priorityOverview[p._id] = p.count;
         }
     }
 
-    // 5. Status distribution
+    // --- Part 5: Status distribution (used by the pie chart) ---
     const statusDistribution = {
         Submitted: submittedCount,
         Assigned: assignedCount,
@@ -126,11 +147,11 @@ export async function getDashboardStats(user) {
         Escalated: escalatedCount,
     };
 
-    // 6. Recent complaints (5 latest)
+    // --- Part 6: Recent complaints (5 latest) ---
     const recentDocs = await Complaint.find(scopeFilter)
         .populate("studentId", "name email mobile")
         .populate("assignedTechnician", "name specialization")
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: -1 }) // newest first
         .limit(5)
         .lean();
 
@@ -152,7 +173,10 @@ export async function getDashboardStats(user) {
         };
     });
 
-    // 7. Background trigger: Check and record overdue notifications if any overdue complaints exist
+    // --- Part 7: Fire-and-forget overdue notifications ---
+    // If there are overdue complaints, send alerts to wardens/admins.
+    // We do NOT await this — we kick it off in the background so the
+    // dashboard response is not delayed. Errors are silently ignored.
     if (overdueCount > 0) {
         Complaint.find(overdueFilter)
             .limit(10)
@@ -169,9 +193,10 @@ export async function getDashboardStats(user) {
                     });
                 }
             })
-            .catch(() => {});
+            .catch(() => {}); // ignore errors — notifications are non-critical
     }
 
+    // Return everything the dashboard needs
     return {
         cards: {
             total,

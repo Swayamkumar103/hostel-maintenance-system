@@ -110,7 +110,7 @@ export default function EscalatedClient() {
                     <p className="mt-3 text-xs font-medium text-slate-500">Scanning urgent tickets...</p>
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-xs">
+                <div className="rounded-3xl border-2 border-slate-200/90 bg-white py-16 text-center shadow-md shadow-slate-900/5">
                     <span className="text-3xl">🎉</span>
                     <h3 className="mt-2 text-base font-bold text-slate-800">No escalated or overdue tickets</h3>
                     <p className="mt-1 text-xs text-slate-500">All maintenance requests are operating within their SLA guidelines.</p>
@@ -120,7 +120,7 @@ export default function EscalatedClient() {
                     {filtered.map((c) => (
                         <div
                             key={c._id}
-                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4"
+                            className="rounded-3xl border-2 border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/5 transition hover:shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
                         >
                             <div className="space-y-1.5 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">

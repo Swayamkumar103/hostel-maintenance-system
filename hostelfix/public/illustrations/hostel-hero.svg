@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.15" />
+      <stop offset="50%" stop-color="#3B82F6" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.15" />
+    </linearGradient>
+    <linearGradient id="buildingGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="buildingGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4338CA" />
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0EA5E9" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="accentCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="accentAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="accentEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Background Glow & Grid -->
+  <rect width="800" height="600" rx="32" fill="url(#skyGrad)" />
+  <circle cx="400" cy="300" r="260" fill="#3B82F6" opacity="0.08" filter="url(#glow)" />
+  <circle cx="680" cy="140" r="90" fill="#06B6D4" opacity="0.12" filter="url(#glow)" />
+  <circle cx="120" cy="450" r="110" fill="#6366F1" opacity="0.1" filter="url(#glow)" />
+
+  <!-- Base Ground Platform -->
+  <ellipse cx="400" cy="510" rx="350" ry="55" fill="#E2E8F0" />
+  <ellipse cx="400" cy="505" rx="330" ry="48" fill="#F1F5F9" />
+
+  <!-- Campus Trees & Landscape -->
+  <ellipse cx="140" cy="485" rx="28" ry="12" fill="#CBD5E1" />
+  <path d="M 140 430 Q 155 455 145 485 L 135 485 Q 125 455 140 430 Z" fill="#64748B" />
+  <circle cx="140" cy="425" r="32" fill="url(#accentEmerald)" opacity="0.9" />
+  <circle cx="155" cy="435" r="22" fill="#10B981" />
+  <circle cx="125" cy="435" r="20" fill="#059669" />
+
+  <ellipse cx="660" cy="485" rx="28" ry="12" fill="#CBD5E1" />
+  <path d="M 660 430 Q 675 455 665 485 L 655 485 Q 645 455 660 430 Z" fill="#64748B" />
+  <circle cx="660" cy="425" r="34" fill="url(#accentEmerald)" opacity="0.9" />
+  <circle cx="678" cy="435" r="24" fill="#10B981" />
+
+  <!-- Main Hostel Complex Building (Left Wing) -->
+  <g filter="url(#shadow)">
+    <!-- Main Left Tower -->
+    <path d="M 180 230 L 320 180 L 320 480 L 180 480 Z" fill="url(#buildingGrad2)" />
+    <!-- Front Face Left -->
+    <path d="M 320 180 L 460 230 L 460 480 L 320 480 Z" fill="url(#buildingGrad1)" />
+
+    <!-- Center Tower / Main Entrance Block -->
+    <path d="M 310 140 L 470 140 L 470 485 L 310 485 Z" fill="#1E40AF" />
+    <path d="M 300 130 L 480 130 L 470 140 L 310 140 Z" fill="url(#roofGrad)" />
+
+    <!-- Modern Rooftop Solar & Sensor Array -->
+    <rect x="330" y="105" width="40" height="25" rx="4" fill="#0284C7" transform="skewX(-15)" />
+    <rect x="380" y="105" width="40" height="25" rx="4" fill="#0284C7" transform="skewX(-15)" />
+    <rect x="430" y="105" width="30" height="25" rx="4" fill="#0284C7" transform="skewX(-15)" />
+    
+    <!-- IoT Antenna / Smart Tower -->
+    <line x1="390" y1="105" x2="390" y2="70" stroke="#0EA5E9" stroke-width="4" stroke-linecap="round" />
+    <circle cx="390" cy="65" r="7" fill="#38BDF8" />
+    <circle cx="390" cy="65" r="14" fill="none" stroke="#38BDF8" stroke-width="2" opacity="0.6" stroke-dasharray="3 3" />
+    <circle cx="390" cy="65" r="22" fill="none" stroke="#38BDF8" stroke-width="1.5" opacity="0.4" stroke-dasharray="4 4" />
+
+    <!-- Hostel Windows with Light Glow -->
+    <!-- Center block windows -->
+    <g fill="#93C5FD" opacity="0.95">
+      <rect x="330" y="160" width="26" height="36" rx="4" />
+      <rect x="375" y="160" width="26" height="36" rx="4" />
+      <rect x="420" y="160" width="26" height="36" rx="4" />
+
+      <rect x="330" y="215" width="26" height="36" rx="4" />
+      <rect x="375" y="215" width="26" height="36" rx="4" fill="#FEF08A" /> <!-- Lit room -->
+      <rect x="420" y="215" width="26" height="36" rx="4" />
+
+      <rect x="330" y="270" width="26" height="36" rx="4" fill="#FEF08A" />
+      <rect x="375" y="270" width="26" height="36" rx="4" />
+      <rect x="420" y="270" width="26" height="36" rx="4" />
+
+      <rect x="330" y="325" width="26" height="36" rx="4" />
+      <rect x="375" y="325" width="26" height="36" rx="4" fill="#BAE6FD" />
+      <rect x="420" y="325" width="26" height="36" rx="4" fill="#FEF08A" />
+
+      <rect x="330" y="380" width="26" height="36" rx="4" fill="#BAE6FD" />
+      <rect x="375" y="380" width="26" height="36" rx="4" />
+      <rect x="420" y="380" width="26" height="36" rx="4" />
+    </g>
+
+    <!-- Side Block Windows (Left) -->
+    <g fill="#A5B4FC" opacity="0.8">
+      <rect x="205" y="250" width="22" height="30" rx="3" transform="skewY(-12)" />
+      <rect x="245" y="240" width="22" height="30" rx="3" transform="skewY(-12)" fill="#FEF08A" />
+      <rect x="280" y="235" width="22" height="30" rx="3" transform="skewY(-12)" />
+
+      <rect x="205" y="310" width="22" height="30" rx="3" transform="skewY(-12)" fill="#FEF08A" />
+      <rect x="245" y="300" width="22" height="30" rx="3" transform="skewY(-12)" />
+      <rect x="280" y="295" width="22" height="30" rx="3" transform="skewY(-12)" />
+
+      <rect x="205" y="370" width="22" height="30" rx="3" transform="skewY(-12)" />
+      <rect x="245" y="360" width="22" height="30" rx="3" transform="skewY(-12)" />
+      <rect x="280" y="355" width="22" height="30" rx="3" transform="skewY(-12)" fill="#FEF08A" />
+    </g>
+
+    <!-- Right Annex Block -->
+    <path d="M 470 200 L 590 235 L 590 480 L 470 480 Z" fill="#1E3A8A" />
+    <g fill="#93C5FD" opacity="0.8">
+      <rect x="490" y="245" width="22" height="30" rx="3" transform="skewY(10)" />
+      <rect x="525" y="252" width="22" height="30" rx="3" transform="skewY(10)" fill="#FEF08A" />
+      <rect x="560" y="258" width="20" height="30" rx="3" transform="skewY(10)" />
+
+      <rect x="490" y="305" width="22" height="30" rx="3" transform="skewY(10)" fill="#FEF08A" />
+      <rect x="525" y="312" width="22" height="30" rx="3" transform="skewY(10)" />
+      <rect x="560" y="318" width="20" height="30" rx="3" transform="skewY(10)" />
+
+      <rect x="490" y="365" width="22" height="30" rx="3" transform="skewY(10)" />
+      <rect x="525" y="372" width="22" height="30" rx="3" transform="skewY(10)" fill="#FEF08A" />
+      <rect x="560" y="378" width="20" height="30" rx="3" transform="skewY(10)" />
+    </g>
+
+    <!-- Modern Grand Glass Entrance -->
+    <path d="M 350 430 L 430 430 L 430 485 L 350 485 Z" fill="#0284C7" />
+    <path d="M 355 435 L 388 435 L 388 485 L 355 485 Z" fill="#E0F2FE" opacity="0.9" />
+    <path d="M 392 435 L 425 435 L 425 485 L 392 485 Z" fill="#E0F2FE" opacity="0.9" />
+    <!-- Entrance Awning Canopy -->
+    <path d="M 335 430 L 445 430 L 455 440 L 325 440 Z" fill="#2563EB" />
+  </g>
+
+  <!-- Floating Feature Card 1: Instant Issue Resolved (Left) -->
+  <g filter="url(#shadow)" transform="translate(60, 160)">
+    <rect width="210" height="84" rx="18" fill="#FFFFFF" />
+    <rect width="210" height="84" rx="18" fill="none" stroke="#E2E8F0" stroke-width="1.5" />
+    <!-- Badge Icon -->
+    <circle cx="42" cy="42" r="22" fill="#ECFDF5" />
+    <path d="M 34 42 L 39 47 L 50 36" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Text -->
+    <text x="74" y="35" font-family="system-ui, sans-serif" font-weight="700" font-size="12" fill="#0F172A">Ticket #HF-4029</text>
+    <text x="74" y="52" font-family="system-ui, sans-serif" font-weight="500" font-size="11" fill="#10B981">Resolved in 38m</text>
+    <text x="74" y="66" font-family="system-ui, sans-serif" font-weight="400" font-size="10" fill="#64748B">Room 304 • Electrical</text>
+  </g>
+
+  <!-- Floating Feature Card 2: Live SLA Engine (Right) -->
+  <g filter="url(#shadow)" transform="translate(530, 120)">
+    <rect width="215" height="92" rx="18" fill="#FFFFFF" />
+    <rect width="215" height="92" rx="18" fill="none" stroke="#E2E8F0" stroke-width="1.5" />
+    <!-- Pulse Indicator -->
+    <circle cx="42" cy="46" r="22" fill="#EFF6FF" />
+    <circle cx="42" cy="46" r="10" fill="#3B82F6" />
+    <circle cx="42" cy="46" r="16" fill="none" stroke="#3B82F6" stroke-width="2" opacity="0.4" />
+    <!-- Text -->
+    <text x="74" y="35" font-family="system-ui, sans-serif" font-weight="700" font-size="12" fill="#0F172A">Automated SLA Tracker</text>
+    <text x="74" y="52" font-family="system-ui, sans-serif" font-weight="600" font-size="11" fill="#2563EB">99.4% On-Time SLA</text>
+    <text x="74" y="68" font-family="system-ui, sans-serif" font-weight="400" font-size="10" fill="#64748B">Real-time escalation radar</text>
+    <rect x="74" y="74" width="120" height="5" rx="2.5" fill="#E2E8F0" />
+    <rect x="74" y="74" width="105" height="5" rx="2.5" fill="#3B82F6" />
+  </g>
+
+  <!-- Floating Feature Card 3: Multi-Hostel Dispatch (Bottom Right) -->
+  <g filter="url(#shadow)" transform="translate(520, 360)">
+    <rect width="210" height="82" rx="18" fill="#FFFFFF" />
+    <rect width="210" height="82" rx="18" fill="none" stroke="#E2E8F0" stroke-width="1.5" />
+    <circle cx="42" cy="41" r="22" fill="#FEF3C7" />
+    <text x="32" y="48" font-size="20">⚡</text>
+    <text x="74" y="34" font-family="system-ui, sans-serif" font-weight="700" font-size="12" fill="#0F172A">Technician Auto-Assign</text>
+    <text x="74" y="51" font-family="system-ui, sans-serif" font-weight="500" font-size="11" fill="#D97706">Category Matching</text>
+    <text x="74" y="66" font-family="system-ui, sans-serif" font-weight="400" font-size="10" fill="#64748B">Plumbing • HVAC • Electrical</text>
+  </g>
+</svg>

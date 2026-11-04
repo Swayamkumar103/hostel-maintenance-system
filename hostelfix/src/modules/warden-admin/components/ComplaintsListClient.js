@@ -122,7 +122,7 @@ export default function ComplaintsListClient({ initialHostels = [] }) {
             )}
 
             {/* Table / List */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="rounded-3xl border-2 border-slate-200/90 bg-white p-4 sm:p-6 shadow-md shadow-slate-900/5">
                 {isLoading ? (
                     <div className="py-20 text-center">
                         <div className="mx-auto h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-blue-600" />

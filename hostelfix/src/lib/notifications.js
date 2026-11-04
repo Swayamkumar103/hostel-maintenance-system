@@ -3,7 +3,14 @@ import Notification from "@/module/Notification";
 import User from "@/module/User";
 
 /**
- * Dispatch a single notification with deduplication.
+ * Save a single notification to the database.
+ *
+ * Uses the `eventKey` field to prevent duplicate notifications.
+ * If a notification with the same eventKey already exists (E11000 duplicate key),
+ * we silently ignore it — this makes notifications idempotent (safe to call multiple times).
+ *
+ * @param {Object} params - notification data
+ * @returns {Object|null} the saved notification, or null on failure
  */
 export async function sendNotification({
     recipientId,
@@ -12,14 +19,16 @@ export async function sendNotification({
     title,
     message,
     type,
-    eventKey = null,
+    eventKey = null, // unique key to prevent duplicate notifications for the same event
 }) {
+    // Skip if required fields are missing
     if (!recipientId || !complaintId || !title || !message) {
         return null;
     }
 
     try {
         await connectDB();
+
         const notification = await Notification.create({
             recipientId,
             recipientRole,
@@ -29,19 +38,29 @@ export async function sendNotification({
             type,
             eventKey,
         });
+
         return notification;
     } catch (error) {
-        // E11000 duplicate key error means this notification event was already recorded (idempotent)
+        // E11000 = MongoDB duplicate key error.
+        // This means we already sent this exact notification (same eventKey).
+        // This is expected and safe to ignore.
         if (error.code === 11000) {
             return null;
         }
+
         console.error("Failed to send notification:", error.message);
         return null;
     }
 }
 
 /**
- * Notify wardens of a hostel + all admins.
+ * Send notifications to all wardens of a specific hostel AND all admins.
+ *
+ * We use Promise.allSettled() (instead of Promise.all()) so that if one
+ * notification fails, the rest still get sent. Promise.all() would stop
+ * everything if any one notification throws an error.
+ *
+ * @param {Object} params - hostel, complaintId, title, message, type, eventKeyPrefix
  */
 export async function notifyWardenAndAdmins({
     hostel,
@@ -53,42 +72,46 @@ export async function notifyWardenAndAdmins({
 }) {
     try {
         await connectDB();
-        // Find admins + wardens of this hostel
+
+        // Find all admins + wardens who manage this hostel
         const recipients = await User.find({
             $or: [
-                { role: "admin" },
+                { role: "admin" }, // all admins
                 {
                     role: "warden",
                     $or: [
-                        { assignedHostels: hostel },
-                        { hostel: hostel },
-                        { assignedHostels: { $size: 0 } }, // unassigned wardens also see
+                        { assignedHostels: hostel },      // warden assigned to this hostel
+                        { hostel: hostel },               // warden with single hostel field
+                        { assignedHostels: { $size: 0 } }, // unassigned wardens also receive alerts
                     ],
                 },
             ],
-            accountStatus: { $ne: "rejected" },
+            accountStatus: { $ne: "rejected" }, // skip rejected accounts
         }).select("_id role").lean();
 
-        const promises = recipients.map((r) =>
+        // Send a notification to each recipient.
+        // The eventKey is unique per recipient to allow deduplication per person.
+        const notificationPromises = recipients.map((recipient) =>
             sendNotification({
-                recipientId: r._id,
-                recipientRole: r.role,
+                recipientId: recipient._id,
+                recipientRole: recipient.role,
                 complaintId,
                 title,
                 message,
                 type,
-                eventKey: eventKeyPrefix ? `${eventKeyPrefix}_${r._id}` : null,
+                eventKey: eventKeyPrefix ? `${eventKeyPrefix}_${recipient._id}` : null,
             })
         );
 
-        await Promise.allSettled(promises);
+        // Wait for all to finish. allSettled won't throw even if some fail.
+        await Promise.allSettled(notificationPromises);
     } catch (error) {
         console.error("notifyWardenAndAdmins error:", error.message);
     }
 }
 
 /**
- * Notify a student.
+ * Send a notification to a student.
  */
 export async function notifyStudent({
     studentId,
@@ -99,6 +122,7 @@ export async function notifyStudent({
     eventKey = null,
 }) {
     if (!studentId) return;
+
     return sendNotification({
         recipientId: studentId,
         recipientRole: "student",
@@ -111,7 +135,7 @@ export async function notifyStudent({
 }
 
 /**
- * Notify a technician.
+ * Send a notification to a technician.
  */
 export async function notifyTechnician({
     technicianId,
@@ -122,6 +146,7 @@ export async function notifyTechnician({
     eventKey = null,
 }) {
     if (!technicianId) return;
+
     return sendNotification({
         recipientId: technicianId,
         recipientRole: "technician",
