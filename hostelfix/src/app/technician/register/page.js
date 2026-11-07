@@ -29,7 +29,6 @@ export default function TechnicianRegister() {
 
         // Remove confirmPassword
         const { confirmPassword, ...registerData } = data;
-        console.log(data);
         try {
             const response = await fetch("/api/auth/technician/register", {
                 method: "POST",
@@ -48,7 +47,7 @@ export default function TechnicianRegister() {
 
             alert(result.message);
 
-            router.push("/technician/login");
+            router.push("/login");
 
         } catch (error) {
             console.error("Registration Error:", error);

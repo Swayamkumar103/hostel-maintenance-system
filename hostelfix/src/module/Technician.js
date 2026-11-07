@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const TechnicianSchema = new mongoose.Schema(
     {
-        roal:{
+        role:{
             type:String,
             default:"technician",
         },

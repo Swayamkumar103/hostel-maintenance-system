@@ -2,71 +2,105 @@ import mongoose from "mongoose";
 
 const ComplainSchema = new mongoose.Schema(
     {
-        title:{
-            type : String,
-            required : true,
-            trim : true,
+        title: {
+            type: String,
+            required: true,
+            trim: true,
         },
 
-        description : {
-            type : String,
-            required : true,
+        description: {
+            type: String,
+            required: true,
         },
-        hostel : {
-            type : String,
-            required : true,
+
+        hostel: {
+            type: String,
+            required: true,
         },
-        roomNumber : {
-            type : String,
-            required : true,
+
+        roomNumber: {
+            type: String,
+            required: true,
         },
+
         category: {
-            type : String,
-            required : true,
+            type: String,
+            required: true,
         },
-        status : {
-            type : String,
-            enum : [
+
+        // Complaint status
+        status: {
+            type: String,
+            enum: [
                 "Pending",
                 "Assigned",
-                "In progress",
+                "In Progress",
                 "On Hold",
                 "Completed",
+                "Verified",
             ],
-            default : "Pending",
+            default: "Pending",
         },
 
-        studentId:{
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "User",
-            required : true,
+        // Student who created complaint
+        studentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
         },
 
-        assignedTechician : {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "User",
-            default : null,
+        // Technician assigned to complaint
+        assignedTechnician: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
         },
-        schduledDate : {
-            type : Date,
-            default : null,
+
+        // Admin who assigned the complaint
+        assignedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
         },
-        workNotes:{
-            type : String,
-            default : "",
+
+        assignedAt: {
+            type: Date,
+            default: null,
         },
+
+        // Scheduled maintenance date
+        scheduledDate: {
+            type: Date,
+            default: null,
+        },
+
+        // Technician work details
+        workNotes: {
+            type: String,
+            default: "",
+        },
+
+        // Completion evidence
         completionPhoto: {
-            type : [String],
-            default : [],
+            type: [String],
+            default: [],
         },
-        completedAt : {
-            type : Date,
-            default : null,
+
+        completedAt: {
+            type: Date,
+            default: null,
+        },
+
+        // Admin verification
+        verifiedAt: {
+            type: Date,
+            default: null,
         },
     },
     {
-        timestamps : true,
+        timestamps: true,
     }
 );
 
-export default mongoose.models.Complaint||mongoose.model("Complaint",ComplainSchema);
+export default mongoose.models.Complaint ||
+    mongoose.model("Complaint", ComplainSchema);

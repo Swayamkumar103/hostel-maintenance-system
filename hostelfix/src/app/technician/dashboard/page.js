@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"; 
+import { connection } from "next/server";
 import { getTechinianDashboard } from "@/app/actions/technicianActions";
 import TechnicianDashboardClient from "./TechnicianDashboardClient";
 
 export default async function TechnicianDashboardPage(){
+    await connection();
     const result = await getTechinianDashboard();
     if(!result.success){
         if(
@@ -26,6 +28,7 @@ export default async function TechnicianDashboardPage(){
     }
     return(
         <TechnicianDashboardClient 
+            technicianName={result.technicianName}
             initialStats={result.stats}
             initialComplaints={result.complaints}
         />

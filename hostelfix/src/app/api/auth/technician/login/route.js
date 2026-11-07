@@ -21,8 +21,6 @@ export async function POST(request){
         const user = await Technician.findOne({
             email : email.trim().toLowerCase()
         })
-        // console.log(user);
-        // console.log(user.roal);
         if(!user){
             return NextResponse.json(
                 {
@@ -32,7 +30,7 @@ export async function POST(request){
                 {status:401}
             );
         }
-        if(user.roal!=="technician"){
+        if(user.role!=="technician"){
             return NextResponse.json(
                 {sucess : false,
                 message : "Acces denied. Technician account required.",},

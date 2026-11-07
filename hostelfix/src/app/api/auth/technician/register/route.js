@@ -81,7 +81,7 @@ export async function POST(request) {
             experience: experienceValue,
             availability: true,
             role: "technician",
-            accountStatus: "pending"
+            status: "pending"
         });
 
         // 8. Send response
